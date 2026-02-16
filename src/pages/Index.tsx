@@ -2,13 +2,19 @@ import { useState, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import VpnButton from "@/components/VpnButton";
 import ConnectionStats from "@/components/ConnectionStats";
-import ServerList, { servers, type Server } from "@/components/ServerList";
+import ServerList, { defaultServers, type Server } from "@/components/ServerList";
+import QrScanner from "@/components/QrScanner";
+import SettingsScreen from "@/components/SettingsScreen";
 
 const Index = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectedAt, setConnectedAt] = useState<number | null>(null);
-  const [selectedServer, setSelectedServer] = useState<Server>(servers[0]);
+  const [servers, setServers] = useState<Server[]>(defaultServers);
+  const [selectedServer, setSelectedServer] = useState<Server>(defaultServers[0]);
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<"vpn" | "servers" | "settings">("vpn");
 
   const handleToggle = useCallback(() => {
     if (isConnecting) return;
@@ -27,25 +33,44 @@ const Index = () => {
     }, 2000);
   }, [isConnected, isConnecting]);
 
+  const handleAddServer = (data: { country: string; city: string; flag: string; ping: number; load: number }) => {
+    const newServer: Server = {
+      id: `custom-${Date.now()}`,
+      ...data,
+    };
+    setServers((prev) => [...prev, newServer]);
+    setSelectedServer(newServer);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <Icon name="Shield" size={22} className="text-blue-400" />
-          <span className="font-semibold text-foreground tracking-tight">ShieldVPN</span>
+          <span className="font-semibold text-foreground tracking-tight">BVA VPN</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            isConnected ? "bg-emerald-400" : "bg-muted-foreground"
-          }`} />
-          <span className="text-xs text-muted-foreground">
-            {isConnected ? "Подключено" : "Отключено"}
-          </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowQrScanner(true)}
+            className="w-9 h-9 rounded-full bg-[hsl(var(--vpn-surface))] flex items-center justify-center hover:bg-[hsl(222_40%_15%)] transition-colors"
+          >
+            <Icon name="QrCode" size={16} className="text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              isConnected ? "bg-emerald-400" : "bg-muted-foreground"
+            }`} />
+            <span className="text-xs text-muted-foreground">
+              {isConnected ? "Подключено" : "Отключено"}
+            </span>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center px-6 pb-8">
-        <div className="flex-1 flex flex-col items-center justify-center gap-8 w-full max-w-md">
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full max-w-md">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">BVA VPN</h1>
+
           <div className="text-center">
             <p className="text-muted-foreground text-sm">
               {isConnected
@@ -70,31 +95,80 @@ const Index = () => {
         </div>
 
         <div className="w-full max-w-md mt-6">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3 px-1">
-            Сервер
-          </p>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest">
+              Сервер
+            </p>
+            <button
+              onClick={() => setShowQrScanner(true)}
+              className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <Icon name="Plus" size={14} />
+              <span className="text-xs font-medium">Добавить</span>
+            </button>
+          </div>
           <ServerList
             selectedServer={selectedServer}
+            servers={servers}
             onSelect={setSelectedServer}
+            onQrScan={() => setShowQrScanner(true)}
             isConnected={isConnected}
           />
         </div>
       </main>
 
       <footer className="px-6 py-4 flex items-center justify-center gap-6 border-t border-border">
-        <button className="flex flex-col items-center gap-1 text-blue-400">
+        <button
+          onClick={() => setActiveTab("vpn")}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === "vpn" ? "text-blue-400" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
           <Icon name="Shield" size={20} />
           <span className="text-[10px]">VPN</span>
         </button>
-        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-          <Icon name="Globe" size={20} />
-          <span className="text-[10px]">Серверы</span>
+        <button
+          onClick={() => {
+            setActiveTab("servers");
+            setShowQrScanner(true);
+          }}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === "servers" ? "text-blue-400" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Icon name="QrCode" size={20} />
+          <span className="text-[10px]">QR-код</span>
         </button>
-        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+        <button
+          onClick={() => {
+            setActiveTab("settings");
+            setShowSettings(true);
+          }}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === "settings" ? "text-blue-400" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
           <Icon name="Settings" size={20} />
           <span className="text-[10px]">Настройки</span>
         </button>
       </footer>
+
+      <QrScanner
+        isOpen={showQrScanner}
+        onClose={() => {
+          setShowQrScanner(false);
+          setActiveTab("vpn");
+        }}
+        onServerAdd={handleAddServer}
+      />
+
+      <SettingsScreen
+        isOpen={showSettings}
+        onClose={() => {
+          setShowSettings(false);
+          setActiveTab("vpn");
+        }}
+      />
     </div>
   );
 };

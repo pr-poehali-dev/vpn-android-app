@@ -12,11 +12,13 @@ interface Server {
 
 interface ServerListProps {
   selectedServer: Server;
+  servers: Server[];
   onSelect: (server: Server) => void;
+  onQrScan: () => void;
   isConnected: boolean;
 }
 
-const servers: Server[] = [
+const defaultServers: Server[] = [
   { id: "nl-1", country: "Нидерланды", city: "Амстердам", flag: "🇳🇱", ping: 24, load: 35 },
   { id: "de-1", country: "Германия", city: "Франкфурт", flag: "🇩🇪", ping: 31, load: 42 },
   { id: "fi-1", country: "Финляндия", city: "Хельсинки", flag: "🇫🇮", ping: 18, load: 28 },
@@ -29,7 +31,7 @@ const servers: Server[] = [
   { id: "au-1", country: "Австралия", city: "Сидней", flag: "🇦🇺", ping: 195, load: 27 },
 ];
 
-const ServerList = ({ selectedServer, onSelect, isConnected }: ServerListProps) => {
+const ServerList = ({ selectedServer, servers, onSelect, onQrScan, isConnected }: ServerListProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const getPingColor = (ping: number) => {
@@ -70,57 +72,70 @@ const ServerList = ({ selectedServer, onSelect, isConnected }: ServerListProps) 
       </button>
 
       {isOpen && (
-        <div className="mt-2 bg-[hsl(var(--vpn-surface))] rounded-xl overflow-hidden divide-y divide-border">
-          {servers.map((server) => (
-            <button
-              key={server.id}
-              onClick={() => {
-                if (!isConnected) {
-                  onSelect(server);
-                  setIsOpen(false);
-                }
-              }}
-              disabled={isConnected}
-              className={`w-full flex items-center justify-between p-4 transition-colors ${
-                server.id === selectedServer.id
-                  ? "bg-blue-500/10"
-                  : isConnected
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-[hsl(222_40%_15%)]"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{server.flag}</span>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-foreground">{server.country}</p>
-                  <p className="text-xs text-muted-foreground">{server.city}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-16 h-1.5 rounded-full bg-border overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${getLoadColor(server.load)}`}
-                      style={{ width: `${server.load}%` }}
-                    />
+        <div className="mt-2 bg-[hsl(var(--vpn-surface))] rounded-xl overflow-hidden">
+          <div className="divide-y divide-border">
+            {servers.map((server) => (
+              <button
+                key={server.id}
+                onClick={() => {
+                  if (!isConnected) {
+                    onSelect(server);
+                    setIsOpen(false);
+                  }
+                }}
+                disabled={isConnected}
+                className={`w-full flex items-center justify-between p-4 transition-colors ${
+                  server.id === selectedServer.id
+                    ? "bg-blue-500/10"
+                    : isConnected
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-[hsl(222_40%_15%)]"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{server.flag}</span>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-foreground">{server.country}</p>
+                    <p className="text-xs text-muted-foreground">{server.city}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground w-8">{server.load}%</span>
                 </div>
-                <span className={`text-xs w-12 text-right ${getPingColor(server.ping)}`}>
-                  {server.ping} мс
-                </span>
-                {server.id === selectedServer.id && (
-                  <Icon name="Check" size={16} className="text-blue-400" />
-                )}
-              </div>
-            </button>
-          ))}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 rounded-full bg-border overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${getLoadColor(server.load)}`}
+                        style={{ width: `${server.load}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-8">{server.load}%</span>
+                  </div>
+                  <span className={`text-xs w-12 text-right ${getPingColor(server.ping)}`}>
+                    {server.ping} мс
+                  </span>
+                  {server.id === selectedServer.id && (
+                    <Icon name="Check" size={16} className="text-blue-400" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              onQrScan();
+            }}
+            className="w-full p-4 flex items-center justify-center gap-2 border-t border-border text-blue-400 hover:bg-blue-500/5 transition-colors"
+          >
+            <Icon name="QrCode" size={16} />
+            <span className="text-sm font-medium">Добавить через QR-код</span>
+          </button>
         </div>
       )}
     </div>
   );
 };
 
-export { servers };
+export { defaultServers };
 export type { Server };
 export default ServerList;
